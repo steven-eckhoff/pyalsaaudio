@@ -2613,6 +2613,9 @@ PyObject *PyInit_alsaaudio(void)
     _EXPORT_INT(m, "MIXER_SCHN_MONO", SND_MIXER_SCHN_MONO);
 #endif
 
+    // Avoid messing with PulseAudio mixer
+	setenv("PULSE_INTERNAL", "0", 1);
+
 #if PY_MAJOR_VERSION >= 3
     return m;
 #endif

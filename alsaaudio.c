@@ -1223,63 +1223,6 @@ List the available mixers. The optional cardname specifies\n\
 which card should be queried (this is only relevant if you\n\
 have more than one sound card). Omit to use the default sound card.");
 
-static PyObject *
-alsacontrol_list(PyObject *self, PyObject *args, PyObject *kwds)
-{
-    snd_hctl_t *handle;
-    snd_hctl_elem_t *elem;
-    int err;
-    int cardidx = -1;
-    char hw_device[32];
-    char *device = "default";
-    PyObject *result;
-
-    char *kw[] = { "cardindex", "device", NULL };
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|is", kw, &cardidx, &device))
-        return NULL;
-
-    if (cardidx >= 0) {
-        if (cardidx < 32) {
-            snprintf(hw_device, sizeof(hw_device), "hw:%d", cardidx);
-            device = hw_device;
-        }
-        else {
-            PyErr_Format(ALSAAudioError, "Invalid card number %d", cardidx);
-            return NULL;
-        }
-    }
-
-    if ((err = snd_hctl_open(&handle, device, 0)) < 0) {
-        PyErr_Format(ALSAAudioError, "%s: %s", device, snd_strerror(err));
-        return NULL;
-    }
-    if ((err = snd_hctl_load(handle)) < 0) {
-        PyErr_Format(ALSAAudioError, "%s: %s", device, snd_strerror(err));
-        return NULL;
-    }
-
-    result = PyList_New(0);
-
-    for (elem = snd_hctl_first_elem(handle); elem;
-            elem = snd_hctl_elem_next(elem)) {
-        PyObject *control = PyUnicode_FromString(snd_hctl_elem_get_name(elem));
-        PyList_Append(result, control);
-        Py_DECREF(control);
-    }
-
-    snd_hctl_close(handle);
-
-    return result;
-}
-
-PyDoc_STRVAR(controls_doc,
-"controls([cardname])\n\
-\n\
-List the available controls. The optional cardname specifies\n\
-which card should be queried (this is only relevant if you\n\
-have more than one sound card). Omit to use the default sound card.");
-
 static snd_mixer_elem_t *
 alsamixer_find_elem(snd_mixer_t *handle, char *control, int id)
 {
@@ -2464,6 +2407,62 @@ static PyTypeObject ALSAMixerType = {
     0,			                  /* tp_members */
 };
 
+static PyObject *
+alsacontrol_list(PyObject *self, PyObject *args, PyObject *kwds)
+{
+    snd_hctl_t *handle;
+    snd_hctl_elem_t *elem;
+    int err;
+    int cardidx = -1;
+    char hw_device[32];
+    char *device = "default";
+    PyObject *result;
+
+    char *kw[] = { "cardindex", "device", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|is", kw, &cardidx, &device))
+        return NULL;
+
+    if (cardidx >= 0) {
+        if (cardidx < 32) {
+            snprintf(hw_device, sizeof(hw_device), "hw:%d", cardidx);
+            device = hw_device;
+        }
+        else {
+            PyErr_Format(ALSAAudioError, "Invalid card number %d", cardidx);
+            return NULL;
+        }
+    }
+
+    if ((err = snd_hctl_open(&handle, device, 0)) < 0) {
+        PyErr_Format(ALSAAudioError, "%s: %s", device, snd_strerror(err));
+        return NULL;
+    }
+    if ((err = snd_hctl_load(handle)) < 0) {
+        PyErr_Format(ALSAAudioError, "%s: %s", device, snd_strerror(err));
+        return NULL;
+    }
+
+    result = PyList_New(0);
+
+    for (elem = snd_hctl_first_elem(handle); elem;
+            elem = snd_hctl_elem_next(elem)) {
+        PyObject *control = PyUnicode_FromString(snd_hctl_elem_get_name(elem));
+        PyList_Append(result, control);
+        Py_DECREF(control);
+    }
+
+    snd_hctl_close(handle);
+
+    return result;
+}
+
+PyDoc_STRVAR(controls_doc,
+"controls([cardname])\n\
+\n\
+List the available controls. The optional cardname specifies\n\
+which card should be queried (this is only relevant if you\n\
+have more than one sound card). Omit to use the default sound card.");
 
 /******************************************/
 /* Module initialization                  */
